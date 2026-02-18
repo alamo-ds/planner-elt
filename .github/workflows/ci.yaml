@@ -1,0 +1,43 @@
+name: planner-elt-ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - name: Security check
+        run: make gosec
+      - name: gofmt
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            gofmt -s -l .
+            echo "Please format Go code by running: go fmt ./..."
+            exit 1
+          fi
+      - name: Test with Go
+        run: |
+          go mod tidy
+          go test -json ./... > TestResults-stable.json
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v6
+        with:
+          name: Go-results-stable
+          path: TestResults-stable.json
