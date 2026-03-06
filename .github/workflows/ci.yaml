@@ -37,7 +37,7 @@ jobs:
           go mod tidy
           go test -json ./... > TestResults-stable.json
       - name: Upload Go test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Go-results-stable
           path: TestResults-stable.json
