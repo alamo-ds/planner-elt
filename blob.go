@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -50,6 +50,6 @@ func pushBlob(ctx context.Context, c *azblob.Client, blobDir string, v any) erro
 		return fmt.Errorf("couldn't write buffer to blob: %v", err)
 	}
 
-	log.Printf("uploaded %d bytes to %s\n", len(data), blobContainerName)
+	slog.Info("pushed successfully to storage", "bytes", len(data), "container", blobContainerName, "directory", blobDir)
 	return nil
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/alamo-ds/msgraph/graph"
 )
@@ -68,7 +68,7 @@ func (cl *client) Error(worker string, err error) {
 }
 
 func (cl *client) Close() {
-	log.Println("closing client...")
+	slog.Info("closing client...")
 }
 
 type groupJob struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -23,48 +23,61 @@ var cfg = graph.AzureADConfig{
 	ClientSecret: clientSecret,
 }
 
+func init() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+}
+
 func main() {
+	if err := run(); err != nil {
+		slog.Error("fatal error", "error", err)
+	}
+
+	slog.Info("exiting...")
+	os.Exit(0)
+}
+
+func run() error {
 	if err := checkCfg(); err != nil {
-		log.Fatalln(err)
+		return fmt.Errorf("invalid config: %v", err)
 	}
 
 	blobClient, err := newBlobClient()
 	if err != nil {
-		log.Fatalln("couldn't create blob client:", err)
+		return fmt.Errorf("error creating blob client: %v", err)
 	}
-	log.Println("blob client created...")
+	slog.Info("blob client created...")
 
 	ctx := context.Background()
 	client, err := newClient(graph.NewClient(ctx, cfg))
 	if err != nil {
-		log.Fatalln("couldn't create MS graph client:", err)
+		return fmt.Errorf("couldn't create MS graph client: %v", err)
 	}
-	log.Println("MS graph clinet created...")
+	slog.Debug("MS graph client created...")
 	defer client.Close()
 
-	log.Println("starting root worker...")
+	slog.Info("starting root worker...")
 
 	var tasks []Task
 
 	for r := range client.execute(context.Background()) {
 		task, ok := r.(*Task)
 		if !ok {
-			log.Fatalln("type mismatch!")
+			slog.Debug("type mismatch!")
 		}
 		tasks = append(tasks, *task)
 	}
 
 	if len(tasks) == 0 {
-		log.Fatalln("GetTaskJob did not return any results")
+		slog.Info("Job did not return any results")
+		return nil
 	}
-
-	fmt.Println("tasks found:", len(tasks))
 
 	if err = pushBlob(ctx, blobClient, tasksDir, tasks); err != nil {
-		log.Fatalln("couldn't push tasks to ADLS:", err)
+		return fmt.Errorf("couldn't push tasks to storage: %v", err)
 	}
 
-	log.Println("program ran successfully. exiting...")
+	return nil
 }
 
 func checkCfg() error {
