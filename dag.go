@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"slices"
 	"sync"
 	"time"
@@ -108,7 +108,7 @@ func (d *DAG) Run(ctx context.Context) <-chan any {
 	go func() {
 		select {
 		case err := <-d.errCh:
-			log.Fatalln("encountered error:", err)
+			slog.Error("worker execution failed", "error", err)
 			cancel()
 		case <-ctx.Done():
 		}
