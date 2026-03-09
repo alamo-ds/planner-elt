@@ -47,7 +47,6 @@ jobs:
           path: TestResults-stable.json
 
   docker-dev:
-    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu
     steps:
