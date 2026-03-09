@@ -15,9 +15,6 @@ import (
 
 const (
 	DefaultNumWorkers = 3
-	storageAcctName   = "stplannerdeveus002"
-	blobContainerName = "elt-raw-dev"
-	groupsDir         = "groups"
 	tasksDir          = "tasks"
 )
 
@@ -27,7 +24,7 @@ func newBlobClient() (*azblob.Client, error) {
 		return nil, fmt.Errorf("couldn't authenticate: %v", err)
 	}
 
-	containerURL := p.Format("https://%s.blob.core.windows.net/", storageAcctName)
+	containerURL := p.Format("https://%s.blob.core.windows.net/", storageAccountName)
 	client, err := azblob.NewClient(containerURL, cred, nil)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create Blob client: %v", err)
