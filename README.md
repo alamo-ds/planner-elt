@@ -15,11 +15,11 @@ To run this application, you will need an Azure AD App Registration with the app
 
 You must provide the following environment variables:
 
-- `tenantid`: Your Azure AD Tenant ID.
-- `clientid`: Your Azure AD Application (Client) ID.
-- `clientsecret`: Your Azure AD Application Client Secret.
+- `TENANT_ID`: Your Azure AD Tenant ID.
+- `CLIENT_ID`: Your Azure AD Application (Client) ID.
+- `CLIENT_SECRET`: Your Azure AD Application Client Secret.
 
-*Note: Additional environment variables may be required for Azure Blob Storage authentication depending on your environment (e.g., `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, or using Azure Identity).*
+_Note: Additional environment variables may be required for Azure Blob Storage authentication depending on your environment (e.g., `AZURE_STORAGE_ACCOUNT`, `AZURE_STORAGE_KEY`, or using Azure Identity)._
 
 ## Running the Application
 
@@ -29,9 +29,9 @@ The application is published as a Docker image to Docker Hub: `alamods/planner-e
 
 ```bash
 docker run --rm \
-  -e tenantid="YOUR_TENANT_ID" \
-  -e clientid="YOUR_CLIENT_ID" \
-  -e clientsecret="YOUR_CLIENT_SECRET" \
+  -e TENANT_ID="YOUR_TENANT_ID" \
+  -e CLIENT_ID="YOUR_CLIENT_ID" \
+  -e CLIENT_SECRET="YOUR_CLIENT_SECRET" \
   alamods/planner-elt:latest
 ```
 
@@ -45,9 +45,9 @@ git clone https://github.com/alamo-ds/planner-elt.git
 cd planner-elt
 
 # Export required environment variables
-export tenantid="YOUR_TENANT_ID"
-export clientid="YOUR_CLIENT_ID"
-export clientsecret="YOUR_CLIENT_SECRET"
+export TENANT_ID="YOUR_TENANT_ID"
+export CLIENT_ID="YOUR_CLIENT_ID"
+export CLIENT_SECRET="YOUR_CLIENT_SECRET"
 
 # Run the application
 go run .
@@ -66,6 +66,7 @@ You can build the Docker image locally using the provided script:
 ### CI/CD
 
 This project uses GitHub Actions for Continuous Integration and Deployment:
+
 - **CI**: Runs tests and linters on pull requests and pushes to the main branch.
 - **Release**: Automatically builds and pushes the Docker image to Docker Hub and creates a GitHub Release using GoReleaser when a new tag is pushed.
 

@@ -12,9 +12,11 @@ import (
 )
 
 var (
-	tenantId     = os.Getenv("tenantid")
-	clientId     = os.Getenv("clientid")
-	clientSecret = os.Getenv("clientsecret")
+	tenantId           = os.Getenv("TENANT_ID")
+	clientId           = os.Getenv("CLIENT_ID")
+	clientSecret       = os.Getenv("CLIENT_SECRET")
+	storageAccountName = os.Getenv("STORAGE_ACCOUNT_NAME")
+	blobContainerName  = os.Getenv("BLOB_CONTAINER_NAME")
 )
 
 var cfg = graph.AzureADConfig{
@@ -84,13 +86,20 @@ func checkCfg() error {
 	m := []string{}
 
 	if cfg.TenantID == "" {
-		m = append(m, "tenantid")
+		m = append(m, "TENANT_ID")
 	}
 	if cfg.ClientID == "" {
-		m = append(m, "clientid")
+		m = append(m, "CLIENT_ID")
 	}
 	if cfg.ClientSecret == "" {
-		m = append(m, "clientsecret")
+		m = append(m, "CLIENT_SECRET")
+	}
+
+	if storageAccountName == "" {
+		m = append(m, "STORAGE_ACOUNT_NAME")
+	}
+	if blobContainerName == "" {
+		m = append(m, "BLOB_CONTAINER_NAME")
 	}
 
 	if len(m) == 0 {
