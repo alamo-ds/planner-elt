@@ -19,9 +19,9 @@ const (
 )
 
 func newBlobClient() (*azblob.Client, error) {
-	cred, err := azidentity.NewClientSecretCredential(tenantId, clientId, clientSecret, nil)
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't authenticate: %v", err)
+		return nil, fmt.Errorf("couldn't create credentials: %v", err)
 	}
 
 	containerURL := p.Format("https://%s.blob.core.windows.net/", storageAccountName)
@@ -39,10 +39,11 @@ func pushBlob(ctx context.Context, c *azblob.Client, blobDir string, v any) erro
 	objName := time.Now().Format("2006-01-02") + ".json"
 	blobName := filepath.Join(blobDir, objName)
 
-	ctxWithCancel, cancel := context.WithCancel(ctx)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DefaultTimeoutSeconds*time.Second)
 	defer cancel()
 
-	_, err := c.UploadBuffer(ctxWithCancel, blobContainerName, blobName, data, nil)
+	slog.Info("pushing object...")
+	_, err := c.UploadBuffer(ctxWithTimeout, blobContainerName, blobName, data, nil)
 	if err != nil {
 		return fmt.Errorf("couldn't write buffer to blob: %v", err)
 	}

@@ -1,5 +1,9 @@
+resource "random_id" "storage_suffix" {
+  byte_length = 3
+}
+
 locals {
-  storage_account_name = "stplanner${var.environment}eus002"
+  storage_account_name = "stplanner${var.environment}eus${random_id.storage_suffix.hex}"
   container_name       = "elt-raw-${var.environment}"
 }
 
@@ -10,6 +14,12 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
+resource "azurerm_user_assigned_identity" "job_identity" {
+  name                = "id-planner-elt-${var.environment}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
+
 resource "azurerm_key_vault" "kv" {
   name                      = "kv-planner-elt-${var.environment}"
   location                  = azurerm_resource_group.rg.location
@@ -18,6 +28,18 @@ resource "azurerm_key_vault" "kv" {
   sku_name                  = "standard"
   purge_protection_enabled  = false
   enable_rbac_authorization = true
+}
+
+resource "azurerm_role_assignment" "kv_secrets_user" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.job_identity.principal_id
+}
+
+resource "azurerm_role_assignment" "storage_contributor" {
+  scope                = azurerm_storage_account.adls.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.job_identity.principal_id
 }
 
 resource "azurerm_storage_account" "adls" {
@@ -50,6 +72,10 @@ resource "azurerm_container_app_environment" "cae" {
 }
 
 resource "azurerm_container_app_job" "job" {
+  depends_on = [
+    azurerm_role_assignment.kv_secrets_user,
+    azurerm_role_assignment.storage_contributor,
+  ]
   name                         = "caj-planner-elt-${var.environment}"
   location                     = azurerm_resource_group.rg.location
   resource_group_name          = azurerm_resource_group.rg.name
@@ -60,22 +86,23 @@ resource "azurerm_container_app_job" "job" {
     cron_expression = "0 9 * * *"
   }
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.job_identity.id]
   }
   secret {
     name                = "tenant-id"
     key_vault_secret_id = "${azurerm_key_vault.kv.vault_uri}secrets/TENANT-ID"
-    identity            = "SystemAssigned"
+    identity            = azurerm_user_assigned_identity.job_identity.id
   }
   secret {
     name                = "client-id"
     key_vault_secret_id = "${azurerm_key_vault.kv.vault_uri}secrets/CLIENT-ID"
-    identity            = "SystemAssigned"
+    identity            = azurerm_user_assigned_identity.job_identity.id
   }
   secret {
     name                = "client-secret"
     key_vault_secret_id = "${azurerm_key_vault.kv.vault_uri}secrets/CLIENT-SECRET"
-    identity            = "SystemAssigned"
+    identity            = azurerm_user_assigned_identity.job_identity.id
   }
 
   template {
@@ -84,6 +111,10 @@ resource "azurerm_container_app_job" "job" {
       image  = "alamods/planner-elt:${var.image_tag}"
       cpu    = 0.5
       memory = "1Gi"
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.job_identity.client_id
+      }
       env {
         name  = "STORAGE_ACCOUNT_NAME"
         value = azurerm_storage_account.adls.name
@@ -108,8 +139,3 @@ resource "azurerm_container_app_job" "job" {
   }
 }
 
-resource "azurerm_role_assignment" "kv_reader" {
-  scope                = azurerm_key_vault.kv.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_container_app_job.job.identity[0].principal_id
-}
