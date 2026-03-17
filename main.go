@@ -33,6 +33,7 @@ func init() {
 func main() {
 	if err := run(); err != nil {
 		slog.Error("fatal error", "error", err)
+		os.Exit(1)
 	}
 
 	slog.Info("exiting...")
@@ -62,7 +63,7 @@ func run() error {
 
 	var tasks []Task
 
-	for r := range client.execute(context.Background()) {
+	for r := range client.execute(ctx) {
 		task, ok := r.(*Task)
 		if !ok {
 			slog.Debug("type mismatch!")
@@ -74,6 +75,7 @@ func run() error {
 		slog.Info("Job did not return any results")
 		return nil
 	}
+	slog.Info("tasks obtained", "count", len(tasks))
 
 	if err = pushBlob(ctx, blobClient, tasksDir, tasks); err != nil {
 		return fmt.Errorf("couldn't push tasks to storage: %v", err)
