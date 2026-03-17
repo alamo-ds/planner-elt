@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- feat: added terraform config
+
+- fix:
+  - authentication switching from client secret to managed identity
+  - storage container ref
+  - when run failes, will exit with code 1
+
 ## [v0.1.6]
 
 - moved logging to `log/slog`
