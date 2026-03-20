@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v0.1.7]
+
 ### Additions
 
 - feat: added terraform config
@@ -32,6 +34,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial release
 
-[Unreleased]: https://github.com/alamo-ds/planner-elt/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/alamo-ds/planner-elt/compare/v0.1.7...HEAD
 [v0.1.5]: https://github.com/alamo-ds/planner-elt/releases/tag/v0.1.5
 [v0.1.6]: https://github.com/alamo-ds/planner-elt/compare/v0.1.5...v0.1.6
+[v0.1.6]: https://github.com/alamo-ds/planner-elt/compare/v0.1.6...v0.1.7
