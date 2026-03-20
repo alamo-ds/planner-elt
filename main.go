@@ -20,9 +20,8 @@ var (
 )
 
 var cfg = graph.AzureADConfig{
-	TenantID:     tenantId,
-	ClientID:     clientId,
-	ClientSecret: clientSecret,
+	TenantID: tenantId,
+	ClientID: clientId,
 }
 
 func init() {
@@ -52,7 +51,7 @@ func run() error {
 	slog.Info("blob client created...")
 
 	ctx := context.Background()
-	client, err := newClient(graph.NewClient(ctx, cfg))
+	client, err := newClient(graph.NewClient(ctx, clientSecret))
 	if err != nil {
 		return fmt.Errorf("couldn't create MS graph client: %v", err)
 	}
@@ -93,7 +92,7 @@ func checkCfg() error {
 	if cfg.ClientID == "" {
 		m = append(m, "CLIENT_ID")
 	}
-	if cfg.ClientSecret == "" {
+	if clientSecret == "" {
 		m = append(m, "CLIENT_SECRET")
 	}
 
@@ -109,6 +108,7 @@ func checkCfg() error {
 	}
 
 	var sb strings.Builder
+
 	for i, envVar := range m {
 		sb.WriteString("  " + envVar)
 		if i < len(m)-1 {
