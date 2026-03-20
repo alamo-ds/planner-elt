@@ -20,15 +20,28 @@ type Task struct {
 	CreatedDateTime      time.Time       `json:"createdDateTime"`
 	DueDateTime          time.Time       `json:"dueDateTime"`
 	CompletedDateTime    time.Time       `json:"completedDateTime"`
+	SnapshotDateTime     time.Time       `json:"snapshotDateTime"`
 	CompletedBy          User            `json:"completedBy"`
 	CreatedBy            User            `json:"createdBy"`
 	Labels               []string        `json:"labels"`
 	Attachments          []Attachment    `json:"attachments"`
 	ChecklistItems       []ChecklistItem `json:"checklistItems"`
 	Comments             []Comment       `json:"comments"`
+	AssignedTo           User            `json:"assignedTo"`
+	AssignedBy           User            `json:"assignedBy"`
 }
 
 func NewTaskFromGraph(task graph.Task) *Task {
+	var assignedBy, assignedTo User
+
+	for id, assignment := range task.Assignments {
+		if !p.IsZero(assignment) {
+			assignedTo = User{Id: id}
+			assignedBy = NewUserFromIdentitySet(assignment.AssignedBy)
+			break
+		}
+	}
+
 	return &Task{
 		ID:                   task.ID,
 		PlanID:               task.PlanID,
@@ -39,10 +52,13 @@ func NewTaskFromGraph(task graph.Task) *Task {
 		CreatedDateTime:      task.CreatedDateTime,
 		DueDateTime:          task.DueDateTime,
 		CompletedDateTime:    task.CompletedDateTime,
+		SnapshotDateTime:     time.Now().UTC(),
 		ConversationThreadID: task.ConversationThreadID,
 		Labels:               p.Keys(task.AppliedCategories),
 		CompletedBy:          NewUserFromIdentitySet(task.CompletedBy),
 		CreatedBy:            NewUserFromIdentitySet(task.CreatedBy),
+		AssignedTo:           assignedTo,
+		AssignedBy:           assignedBy,
 	}
 }
 
@@ -83,10 +99,58 @@ func (t *Task) AddComments(posts []graph.Post) *Task {
 	return t
 }
 
+type users map[string]graph.User
+
+// Add both the ID and principal name (email) to the list of users.
+func (u users) add(user graph.User) {
+	if user.ID != "" {
+		u[user.ID] = user
+	}
+	if user.UserPrincipalName != "" {
+		u[user.UserPrincipalName] = user
+	}
+}
+
+// get the MS Graph user for a given user by id, or email if no ID is
+// provided.
+func (u users) get(user User) graph.User {
+	ret, ok := u[user.Id]
+	if !ok {
+		ret, ok = u[user.Email]
+		if !ok {
+			return graph.User{}
+		}
+	}
+
+	return ret
+}
+
+// Map struct fields using a map of user IDs to Users obtained from
+// MS Graph.
+func (t *Task) AddUsers(users users) *Task {
+	t.CompletedBy.AppendFromGraph(users)
+	t.CreatedBy.AppendFromGraph(users)
+	t.AssignedTo.AppendFromGraph(users)
+	t.AssignedBy.AppendFromGraph(users)
+
+	for i := range t.Comments {
+		t.Comments[i].User.AppendFromGraph(users)
+	}
+
+	return t
+}
+
 type User struct {
 	Id    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+}
+
+func (u *User) AppendFromGraph(users users) {
+	user := users.get(*u)
+	u.Id = user.ID
+	u.Email = user.UserPrincipalName
+	u.Name = user.DisplayName
 }
 
 func NewUserFromIdentitySet(identity graph.IdentitySet) User {

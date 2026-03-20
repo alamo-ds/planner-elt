@@ -141,6 +141,17 @@ type taskJob struct {
 }
 
 func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any) {
+	userMap := make(users)
+	users, err := cl.c.Users().Get(ctx)
+	if err != nil {
+		cl.Error("users", err)
+		return
+	}
+
+	for _, user := range users {
+		userMap.add(user)
+	}
+
 	for job := range in {
 		taskJob, ok := job.(taskJob)
 		if !ok {
@@ -165,7 +176,8 @@ func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any)
 
 		out <- NewTaskFromGraph(taskJob.task).
 			AddDetails(details).
-			AddComments(posts)
+			AddComments(posts).
+			AddUsers(userMap)
 	}
 
 }

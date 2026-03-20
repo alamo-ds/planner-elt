@@ -10,6 +10,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/s-hammon/p"
 )
 
@@ -33,6 +34,8 @@ func newBlobClient() (*azblob.Client, error) {
 	return client, nil
 }
 
+var contentType = "application/json"
+
 func pushBlob(ctx context.Context, c *azblob.Client, blobDir string, v any) error {
 	data, _ := json.MarshalIndent(v, "", "  ")
 
@@ -43,7 +46,11 @@ func pushBlob(ctx context.Context, c *azblob.Client, blobDir string, v any) erro
 	defer cancel()
 
 	slog.Info("pushing object...")
-	_, err := c.UploadBuffer(ctxWithTimeout, blobContainerName, blobName, data, nil)
+	_, err := c.UploadBuffer(ctxWithTimeout, blobContainerName, blobName, data, &azblob.UploadBufferOptions{
+		HTTPHeaders: &blob.HTTPHeaders{
+			BlobContentType: &contentType,
+		},
+	})
 	if err != nil {
 		return fmt.Errorf("couldn't write buffer to blob: %v", err)
 	}
