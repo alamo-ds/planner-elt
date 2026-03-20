@@ -7,12 +7,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-- feat: added terraform config
+### Additions
 
-- fix:
-  - authentication switching from client secret to managed identity
-  - storage container ref
-  - when run failes, will exit with code 1
+- feat: added terraform config
+- Task worker initiates with a call to MS Graph's User endpoint
+  - In the future, this will become its own job
+- Task.AddUsers() method to map MS Graph user details
+- SnapshotDateTime field to Task (captures the current timestamp in UTC)
+- Added Content-Type header to blob requests
+
+### Changes
+
+- authentication switching from client secret to managed identity
+- storage container ref
+- when run fails, will exit with code 1
+- Updated dependencies
+
 
 ## [v0.1.6]
 
