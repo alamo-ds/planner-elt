@@ -51,7 +51,7 @@ func run() error {
 	slog.Info("blob client created...")
 
 	ctx := context.Background()
-	client, err := newClient(graph.NewClient(ctx, clientSecret))
+	client, err := newClient(graph.NewClient(ctx, clientSecret, cfg))
 	if err != nil {
 		return fmt.Errorf("couldn't create MS graph client: %v", err)
 	}
