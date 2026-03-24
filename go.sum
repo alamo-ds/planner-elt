@@ -14,8 +14,10 @@ github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1 h1:WJ
 github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1/go.mod h1:tCcJZ0uHAmvjsVYzEFivsRTN00oz5BEsRgQHu5JZ9WE=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.7.0 h1:4iB+IesclUXdP0ICgAabvq2FYLXrJWKx1fJQ+GxSo3Y=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.7.0/go.mod h1:HKpQxkWaGLJ+D/5H8QRpyQXA1eKjxkFlOMwck5+33Jk=
-github.com/alamo-ds/msgraph v0.2.0 h1:hGu5TAC+7+PN0U4a3OcONR3/F51kJGYLebIfcq1wRXI=
-github.com/alamo-ds/msgraph v0.2.0/go.mod h1:trtkBG6JAEDyg/QPDg9s6xt8ukQJFlHvBG9U+ogzDlI=
+github.com/alamo-ds/dag v0.1.0 h1:Na+NTEIKZmoe9becC/QetFExA5lUoe5Kx/DPQfNHmSE=
+github.com/alamo-ds/dag v0.1.0/go.mod h1:DtjmyxOrIu2wDmMOdaUz/v1xNSA+3v/oxmoEHP5JI1c=
+github.com/alamo-ds/msgraph v0.2.1 h1:IpoeyZaIXA9nE0VDR9s1/uofi4iwEFMrytZmDBA/Q7k=
+github.com/alamo-ds/msgraph v0.2.1/go.mod h1:trtkBG6JAEDyg/QPDg9s6xt8ukQJFlHvBG9U+ogzDlI=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
