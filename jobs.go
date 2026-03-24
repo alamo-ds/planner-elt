@@ -45,12 +45,6 @@ func newClient(c *graph.Client) (*client, error) {
 		return nil
 	}
 
-	// d, err := NewDAG([]*node{
-	// 	newNode("rootIn", client.rootWorker),
-	// 	newNode("groups worker", client.groupWorker, "rootIn"),
-	// 	newNode("plans worker", client.planWorker, "groups worker"),
-	// 	newNode("tasks worker", client.taskWorker, "plans worker"),
-	// })
 	d, err := dag.NewDag(
 		dag.Node("rootIn", rootWorker),
 		dag.Node("groups worker", groupWorker, "rootIn"),

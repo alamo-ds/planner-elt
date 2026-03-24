@@ -18,6 +18,10 @@ var testUsers = users{
 		DisplayName:       "Frejya",
 		UserPrincipalName: "frejya@microsoft.com",
 	},
+	"345": graph.User{
+		ID:          "345",
+		DisplayName: "The Burned Man",
+	},
 }
 
 func TestTask_AddUsers(t *testing.T) {
@@ -35,6 +39,15 @@ func TestTask_AddUsers(t *testing.T) {
 					Email: "frejya@microsoft.com",
 				},
 			},
+			{
+				ID:   "420",
+				Text: "test comment 2",
+				User: User{
+					Id:    "345",
+					Name:  "Joshua Graham",
+					Email: "jgraham@microsoft.com",
+				},
+			},
 		},
 	}
 
@@ -42,4 +55,6 @@ func TestTask_AddUsers(t *testing.T) {
 	require.Equal(t, "Harald", task.CompletedBy.Name)
 	require.Equal(t, "hhardrada@microsoft.com", task.CompletedBy.Email)
 	require.Equal(t, "123", task.Comments[0].User.Id)
+	require.Equal(t, "The Burned Man", task.Comments[1].User.Name)
+	require.Equal(t, "jgraham@microsoft.com", task.Comments[1].User.Email)
 }

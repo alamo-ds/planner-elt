@@ -113,7 +113,7 @@ func (u users) add(user graph.User) {
 
 // get the MS Graph user for a given user by id, or email if no ID is
 // provided.
-func (u users) get(user User) graph.User {
+func (u users) get(user *User) graph.User {
 	ret, ok := u[user.Id]
 	if !ok {
 		ret, ok = u[user.Email]
@@ -147,10 +147,10 @@ type User struct {
 }
 
 func (u *User) AppendFromGraph(users users) {
-	user := users.get(*u)
-	u.Id = user.ID
-	u.Email = user.UserPrincipalName
-	u.Name = user.DisplayName
+	user := users.get(u)
+	u.Id = p.Coalesce(user.ID, u.Id)
+	u.Email = p.Coalesce(user.UserPrincipalName, u.Email)
+	u.Name = p.Coalesce(user.DisplayName, u.Name)
 }
 
 func NewUserFromIdentitySet(identity graph.IdentitySet) User {
