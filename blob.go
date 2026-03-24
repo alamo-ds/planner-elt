@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	DefaultNumWorkers = 3
-	tasksDir          = "tasks"
+	DefaultNumWorkers     = 3
+	DefaultTimeoutSeconds = 10
+	tasksDir              = "tasks"
 )
 
 func newBlobClient() (*azblob.Client, error) {

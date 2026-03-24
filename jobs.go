@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/alamo-ds/dag"
 	"github.com/alamo-ds/msgraph/graph"
 )
 
@@ -17,21 +18,20 @@ var (
 )
 
 type client struct {
-	c          *graph.Client
-	rootWorker op
-	dag        *DAG
+	c *graph.Client
+	d *dag.DAG
 }
 
 func newClient(c *graph.Client) (*client, error) {
 	client := &client{
 		c: c,
 	}
-	client.rootWorker = func(ctx context.Context, in <-chan any, out chan<- any) {
+
+	var rootWorker = func(ctx context.Context, in <-chan any, out chan<- any) error {
 		rbGroups := client.c.Groups()
 		groups, err := rbGroups.Get(ctx)
 		if err != nil {
-			client.Error("root", err)
-			return
+			return workerErr("root", err)
 		}
 
 		for _, group := range groups {
@@ -41,30 +41,28 @@ func newClient(c *graph.Client) (*client, error) {
 				rbPlanner: client.c.Planner(),
 			}
 		}
+
+		return nil
 	}
 
-	dag, err := NewDAG([]*node{
-		newNode("rootIn", client.rootWorker),
-		newNode("groups worker", client.groupWorker, "rootIn"),
-		newNode("plans worker", client.planWorker, "groups worker"),
-		newNode("tasks worker", client.taskWorker, "plans worker"),
-	})
+	d, err := dag.NewDag(
+		dag.Node("rootIn", rootWorker),
+		dag.Node("groups worker", groupWorker, "rootIn"),
+		dag.Node("plans worker", planWorker, "groups worker"),
+		dag.Node("tasks worker", client.taskWorker, "plans worker"),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	client.dag = dag
+	client.d = d
 
 	return client, nil
 }
 
 // TODO: inject context here
 func (cl *client) execute(ctx context.Context) <-chan any {
-	return cl.dag.Run(ctx)
-}
-
-func (cl *client) Error(worker string, err error) {
-	cl.dag.errCh <- workerErr(worker, err)
+	return cl.d.Run(ctx)
 }
 
 func (cl *client) Close() {
@@ -77,18 +75,16 @@ type groupJob struct {
 	rbPlanner *graph.PlannerRequestBuilder
 }
 
-func (cl *client) groupWorker(ctx context.Context, in <-chan any, out chan<- any) {
+func groupWorker(ctx context.Context, in <-chan any, out chan<- any) error {
 	for job := range in {
 		groupJob, ok := job.(groupJob)
 		if !ok {
-			cl.Error("group", errTypeCast)
-			return
+			return errTypeCast
 		}
 
 		plans, err := groupJob.rbGroup.Plans().Get(ctx)
 		if err != nil {
-			cl.Error("group", err)
-			return
+			return workerErr("group", err)
 		}
 
 		for _, plan := range plans {
@@ -99,6 +95,8 @@ func (cl *client) groupWorker(ctx context.Context, in <-chan any, out chan<- any
 			}
 		}
 	}
+
+	return nil
 }
 
 type planJob struct {
@@ -107,18 +105,16 @@ type planJob struct {
 	rbTasks        *graph.TasksRequestBuilder
 }
 
-func (cl *client) planWorker(ctx context.Context, in <-chan any, out chan<- any) {
+func planWorker(ctx context.Context, in <-chan any, out chan<- any) error {
 	for job := range in {
 		planJob, ok := job.(planJob)
 		if !ok {
-			cl.Error("plan", errTypeCast)
-			return
+			return errTypeCast
 		}
 
 		tasks, err := planJob.rbPlannerTasks.Get(ctx)
 		if err != nil {
-			cl.Error("plan", err)
-			continue
+			return workerErr("plan", err)
 		}
 
 		for _, task := range tasks {
@@ -132,6 +128,8 @@ func (cl *client) planWorker(ctx context.Context, in <-chan any, out chan<- any)
 			out <- taskJob
 		}
 	}
+
+	return nil
 }
 
 type taskJob struct {
@@ -140,12 +138,11 @@ type taskJob struct {
 	rbPosts *graph.PostsRequestBuilder
 }
 
-func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any) {
+func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any) error {
 	userMap := make(users)
 	users, err := cl.c.Users().Get(ctx)
 	if err != nil {
-		cl.Error("users", err)
-		return
+		return workerErr("task", err)
 	}
 
 	for _, user := range users {
@@ -155,22 +152,19 @@ func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any)
 	for job := range in {
 		taskJob, ok := job.(taskJob)
 		if !ok {
-			cl.Error("task", errTypeCast)
-			return
+			return errTypeCast
 		}
 
 		details, err := taskJob.rbTask.Details().Get(ctx)
 		if err != nil {
-			cl.Error("task details", err)
-			continue
+			return workerErr("task", err)
 		}
 
 		var posts []graph.Post
 		if taskJob.rbPosts != nil {
 			posts, err = taskJob.rbPosts.Get(ctx)
 			if err != nil {
-				cl.Error("task comments", err)
-				continue
+				return workerErr("task", err)
 			}
 		}
 
@@ -180,4 +174,5 @@ func (cl *client) taskWorker(ctx context.Context, in <-chan any, out chan<- any)
 			AddUsers(userMap)
 	}
 
+	return nil
 }

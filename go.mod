@@ -5,7 +5,8 @@ go 1.25.0
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
-	github.com/alamo-ds/msgraph v0.2.0
+	github.com/alamo-ds/dag v0.1.0
+	github.com/alamo-ds/msgraph v0.2.1
 	github.com/s-hammon/p v0.2.6
 	github.com/stretchr/testify v1.11.1
 )
