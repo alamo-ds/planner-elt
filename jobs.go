@@ -69,6 +69,10 @@ func (cl *client) Close() {
 	slog.Info("closing client...")
 }
 
+func (cl *client) Error() error {
+	return cl.d.Error()
+}
+
 type groupJob struct {
 	id        string
 	rbGroup   *graph.GroupItemRequestBuilder
