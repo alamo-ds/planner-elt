@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/alamo-ds/msgraph/graph"
 )
 
@@ -30,7 +31,17 @@ func init() {
 }
 
 func main() {
-	if err := run(); err != nil {
+	blobClient, err := newBlobClient()
+	if err != nil {
+		slog.Error("couldn't create azblob.Client", "error", err)
+	}
+
+	slog.Info("blob client created...")
+
+	ctx := context.Background()
+	graphClient := graph.NewClient(ctx, clientSecret, cfg)
+
+	if err := runELT(ctx, graphClient, blobClient); err != nil {
 		slog.Error("fatal error", "error", err)
 		os.Exit(1)
 	}
@@ -39,29 +50,22 @@ func main() {
 	os.Exit(0)
 }
 
-func run() error {
+func runELT(ctx context.Context, graphClient *graph.Client, blobClient *azblob.Client) error {
 	if err := checkCfg(); err != nil {
 		return fmt.Errorf("invalid config: %v", err)
 	}
 
-	blobClient, err := newBlobClient()
-	if err != nil {
-		return fmt.Errorf("error creating blob client: %v", err)
-	}
-	slog.Info("blob client created...")
-
-	ctx := context.Background()
-	client, err := newClient(graph.NewClient(ctx, clientSecret, cfg))
+	client, err := newClient(graphClient)
 	if err != nil {
 		return fmt.Errorf("couldn't create MS graph client: %v", err)
 	}
-	slog.Debug("MS graph client created...")
 	defer client.Close()
 
-	slog.Info("starting root worker...")
+	slog.Debug("MS graph client created...")
 
 	var tasks []Task
 
+	slog.Info("executing DAG...")
 	for r := range client.execute(ctx) {
 		task, ok := r.(*Task)
 		if !ok {
@@ -70,10 +74,14 @@ func run() error {
 		tasks = append(tasks, *task)
 	}
 
+	if err := client.Error(); err != nil {
+		return err
+	}
 	if len(tasks) == 0 {
 		slog.Info("Job did not return any results")
 		return nil
 	}
+
 	slog.Info("tasks obtained", "count", len(tasks))
 
 	if err = pushBlob(ctx, blobClient, tasksDir, tasks); err != nil {
