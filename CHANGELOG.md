@@ -10,6 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Integrated the project `github.com/alamo-ds/dag`
 - `alamo-ds/msgraph` version
 - added some unit tests
+- added an integration test
 
 ## [v0.1.7]
 
