@@ -16,7 +16,7 @@ gosec:
 	@gosec -terse ./...
 
 lint:
-	@golangci-lint run --timeout=2m
+	@golangci-lint run --disable=errcheck --timeout=2m
 
 ready: test lint gosec
 

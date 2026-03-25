@@ -41,7 +41,7 @@ func main() {
 	ctx := context.Background()
 	graphClient := graph.NewClient(ctx, clientSecret, cfg)
 
-	if err := run(ctx, graphClient, blobClient); err != nil {
+	if err := runELT(ctx, graphClient, blobClient); err != nil {
 		slog.Error("fatal error", "error", err)
 		os.Exit(1)
 	}
@@ -50,7 +50,7 @@ func main() {
 	os.Exit(0)
 }
 
-func run(ctx context.Context, graphClient *graph.Client, blobClient *azblob.Client) error {
+func runELT(ctx context.Context, graphClient *graph.Client, blobClient *azblob.Client) error {
 	if err := checkCfg(); err != nil {
 		return fmt.Errorf("invalid config: %v", err)
 	}
