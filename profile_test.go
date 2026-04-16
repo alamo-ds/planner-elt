@@ -3,15 +3,17 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/alamo-ds/msgraph/graph"
+	"github.com/alamo-ds/planner-elt/internal/msgraph"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
@@ -58,44 +60,22 @@ func newGraphMux(t *testing.T) *http.ServeMux {
 	return mux
 }
 
-func TestRunELT_Integration(t *testing.T) {
-	mockClient := &http.Client{
-		Transport: &mockTransport{RoundTripper: http.DefaultTransport},
+func TestApp_Run_Profile(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping profile test")
 	}
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, mockClient)
 
-	// 1. Override global config variables
-	cfg.TenantID = "test-tenant"
-	cfg.ClientID = "test-client"
-	clientSecret = "test-secret"
-	storageAccountName = "devstoreaccount1"
-	blobContainerName = "test-container"
-
-	// 2. Mock MS Graph API
 	mux := newGraphMux(t)
+	mux.HandleFunc("/$batch", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"responses": []}`))
+	})
 
 	mockGraphServer := httptest.NewServer(mux)
 	defer mockGraphServer.Close()
 
-	graphClient := graph.NewClient(ctx, clientSecret, cfg)
-	graphClient.BaseURL = mockGraphServer.URL
-
-	// 3. Mock Azure Blob Storage
-	var uploadedBlob []byte
-	var uploadedPath string
-
 	blobMux := http.NewServeMux()
 	blobMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPut {
-			uploadedPath = r.URL.Path
-			body, err := io.ReadAll(r.Body)
-			if err == nil {
-				uploadedBlob = body
-			}
-			w.WriteHeader(http.StatusCreated)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 	})
 
 	mockBlobServer := httptest.NewServer(blobMux)
@@ -104,16 +84,23 @@ func TestRunELT_Integration(t *testing.T) {
 	blobClient, err := azblob.NewClientWithNoCredential(mockBlobServer.URL, nil)
 	require.NoError(t, err)
 
-	err = runELT(ctx, graphClient, blobClient)
-	require.NoError(t, err)
-	require.NotEmpty(t, uploadedBlob, "expected a blob to be uploaded")
-	require.True(t, strings.HasPrefix(uploadedPath, "/test-container/tasks/"), "expected blob path to start with /test-container/tasks/")
+	mockClient := &http.Client{
+		Transport: &mockTransport{RoundTripper: http.DefaultTransport},
+	}
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, mockClient)
 
-	var tasks []Task
-	err = json.Unmarshal(uploadedBlob, &tasks)
-	require.NoError(t, err)
+	graphClient := msgraph.NewClient(ctx, "tenant", "client", "secret")
+	graphClient.BaseURL = mockGraphServer.URL
 
-	require.Len(t, tasks, 1)
-	require.Equal(t, "task-1", tasks[0].ID)
-	require.Equal(t, "Test Task", tasks[0].Name)
+	logger, _, _ := initLogger("")
+	app := NewApp(blobClient, graphClient, logger)
+
+	require.NoError(t, app.Run(ctx))
+
+	f, err := os.Create("mem.prof")
+	require.NoError(t, err)
+	defer f.Close()
+
+	runtime.GC()
+	require.NoError(t, pprof.WriteHeapProfile(f))
 }

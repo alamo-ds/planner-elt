@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/alamo-ds/msgraph/graph"
+	"github.com/alamo-ds/planner-elt/internal/msgraph"
 	"github.com/s-hammon/p"
 )
 
@@ -31,7 +32,7 @@ type Task struct {
 	AssignedBy           User            `json:"assignedBy"`
 }
 
-func NewTaskFromGraph(task graph.Task) *Task {
+func NewTaskFromGraph(task msgraph.Task) *Task {
 	var assignedBy, assignedTo User
 
 	for id, assignment := range task.Assignments {
@@ -62,7 +63,7 @@ func NewTaskFromGraph(task graph.Task) *Task {
 	}
 }
 
-func (t *Task) AddDetails(details graph.TaskDetails) *Task {
+func (t *Task) AddDetails(details msgraph.TaskDetails) *Task {
 	t.Notes = details.Description
 
 	t.Attachments = make([]Attachment, 0, len(details.References))
@@ -153,7 +154,7 @@ func (u *User) AppendFromGraph(users users) {
 	u.Name = p.Coalesce(user.DisplayName, u.Name)
 }
 
-func NewUserFromIdentitySet(identity graph.IdentitySet) User {
+func NewUserFromIdentitySet(identity msgraph.IdentitySet) User {
 	return User{
 		Id:   identity.User.ID,
 		Name: identity.User.DisplayName,

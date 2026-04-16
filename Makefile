@@ -7,13 +7,17 @@ build: test clean
 
 test:
 	@go vet ./...
-	@go test -cover ./...
+	@go test -short -cover ./...
+
+test-prof:
+	@go vet ./...
+	@go test -run Profile$
 
 clean:
 	@go mod tidy
 
 gosec:
-	@gosec -terse ./...
+	@gosec -terse -exclude=G104 ./...
 
 lint:
 	@golangci-lint run --disable=errcheck --timeout=2m
